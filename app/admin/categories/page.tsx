@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 export default function AdminCategoriesPage() {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isLoading: authLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -22,12 +22,14 @@ export default function AdminCategoriesPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!isAdmin) {
       router.push('/');
       return;
     }
     fetchCategories();
-  }, [isAdmin, router]);
+  }, [isAdmin, authLoading, router]);
 
   const fetchCategories = async () => {
     try {
@@ -89,6 +91,14 @@ export default function AdminCategoriesPage() {
     setCategoryName(category.name);
     setShowEditModal(true);
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return null;

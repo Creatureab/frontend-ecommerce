@@ -80,7 +80,7 @@ export default function CartPage() {
                       )}
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1">{item.product.title}</h3>
-                        <p className="text-sm text-gray-600 mb-2">{item.product.category.name}</p>
+                        <p className="text-sm text-gray-600 mb-2">{item.product.category?.name ?? "Uncategorized"}</p>
                         <p className="text-lg font-bold">${item.product.price.toFixed(2)}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2">

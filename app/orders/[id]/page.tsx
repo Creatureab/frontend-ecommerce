@@ -171,7 +171,7 @@ export default function OrderDetailPage() {
                       )}
                       <div className="flex-1">
                         <h4 className="font-semibold">{item.product.title}</h4>
-                        <p className="text-sm text-gray-600">{item.product.category.name}</p>
+                        <p className="text-sm text-gray-600">{item.product.category?.name ?? "Uncategorized"}</p>
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                       </div>
                       <div className="text-right">

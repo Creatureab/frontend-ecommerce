@@ -15,7 +15,7 @@ export interface User {
 export interface Product {
   id: string;
   title: string;
-  category: Category;
+  category: Category | null;
   price: number;
   description: string;
   images: string[];

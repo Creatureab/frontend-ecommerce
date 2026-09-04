@@ -28,7 +28,7 @@ export const api = {
     apiClient.upload<Product>('/products', formData),
   
   updateProduct: (id: string, formData: FormData) =>
-    apiClient.upload<Product>(`/products/${id}`, formData),
+    apiClient.upload<Product>(`/products/${id}`, formData, 'PUT'),
   
   deleteProduct: (id: string) =>
     apiClient.delete(`/products/${id}`),

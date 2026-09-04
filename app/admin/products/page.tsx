@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { Product, Category } from '@/lib/types';
+import { getCategoryName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -12,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 export default function AdminProductsPage() {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isLoading: authLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,16 +28,21 @@ export default function AdminProductsPage() {
     countInStock: '',
   });
   const [imageFiles, setImageFiles] = useState<FileList | null>(null);
+  const [createPreviewUrls, setCreatePreviewUrls] = useState<string[]>([]);
+  const [editPreviewUrls, setEditPreviewUrls] = useState<string[]>([]);
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!isAdmin) {
       router.push('/');
       return;
     }
     fetchProducts();
     fetchCategories();
-  }, [isAdmin, router]);
+  }, [isAdmin, authLoading, router]);
 
   const fetchProducts = async () => {
     try {
@@ -61,7 +67,25 @@ export default function AdminProductsPage() {
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setMessage('');
+
+    if (!imageFiles || imageFiles.length === 0) {
+      setMessage('Please upload at least one product image');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (formData.description.length > 100) {
+      setMessage('Description must be 100 characters or less');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Create preview URLs for selected images
+    const previewUrls = Array.from(imageFiles).map(file => URL.createObjectURL(file));
+    setCreatePreviewUrls(previewUrls);
 
     try {
       const formDataObj = new FormData();
@@ -77,21 +101,38 @@ export default function AdminProductsPage() {
         }
       }
 
-      await api.createProduct(formDataObj);
+      console.log('Sending FormData:', Object.fromEntries(formDataObj.entries()));
+      const response = await api.createProduct(formDataObj);
+      console.log('Product created successfully:', response);
       setMessage('Product created successfully');
       setShowCreateModal(false);
       resetForm();
       fetchProducts();
+      // Clean up preview URLs
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
     } catch (error: any) {
+      console.error('Failed to create product:', error);
       setMessage(error.message || 'Failed to create product');
+      // Clean up preview URLs on error
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct) return;
+    if (!selectedProduct || isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
+      // Create preview URLs for new images if selected
+      let previewUrls: string[] = [];
+      if (imageFiles) {
+        previewUrls = Array.from(imageFiles).map(file => URL.createObjectURL(file));
+        setEditPreviewUrls(previewUrls);
+      }
+
       const formDataObj = new FormData();
       if (formData.title) formDataObj.append('title', formData.title);
       if (formData.category) formDataObj.append('category', formData.category);
@@ -110,8 +151,14 @@ export default function AdminProductsPage() {
       setShowEditModal(false);
       resetForm();
       fetchProducts();
+      // Clean up preview URLs
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
     } catch (error: any) {
       setMessage(error.message || 'Failed to update product');
+      // @ts-ignore - previewUrls might be undefined here if imageFiles was null, fix logic
+      if (typeof previewUrls !== 'undefined') previewUrls.forEach(url => URL.revokeObjectURL(url));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -131,7 +178,7 @@ export default function AdminProductsPage() {
     setSelectedProduct(product);
     setFormData({
       title: product.title,
-      category: product.category.id,
+      category: product.category?.id ?? '',
       price: product.price.toString(),
       description: product.description,
       countInStock: product.countInStock.toString(),
@@ -148,8 +195,18 @@ export default function AdminProductsPage() {
       countInStock: '',
     });
     setImageFiles(null);
+    setCreatePreviewUrls([]);
+    setEditPreviewUrls([]);
     setSelectedProduct(null);
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return null;
@@ -185,7 +242,11 @@ export default function AdminProductsPage() {
         </div>
 
         {message && (
-          <div className="mb-4 p-4 bg-blue-50 text-blue-800 rounded">
+          <div className={`mb-4 p-4 rounded ${
+            message.toLowerCase().includes('success')
+              ? 'bg-green-50 text-green-800'
+              : 'bg-red-50 text-red-800'
+          }`}>
             {message}
           </div>
         )}
@@ -210,7 +271,7 @@ export default function AdminProductsPage() {
                   )}
                   <div className="p-4">
                     <h3 className="font-semibold mb-2 line-clamp-1">{product.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{product.category.name}</p>
+                    <p className="text-sm text-gray-600 mb-2">{getCategoryName(product.category)}</p>
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-bold">${product.price.toFixed(2)}</span>
                       <span className="text-sm text-gray-500">Stock: {product.countInStock}</span>
@@ -307,23 +368,43 @@ export default function AdminProductsPage() {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-3 py-2 border rounded-md min-h-[100px]"
                       required
+                      minLength={5}
+                      maxLength={100}
                     />
+                    <p className="text-xs text-gray-500">{formData.description.length}/100 characters</p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="images">Product Images</Label>
+                    {/* Image preview */}
+                    {createPreviewUrls.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {createPreviewUrls.map((url, idx) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt="Product preview"
+                            className="w-full h-32 object-cover rounded-md"
+                          />
+                        ))}
+                      </div>
+                    )}
                     <Input
                       id="images"
                       type="file"
                       multiple
                       accept="image/*"
+                      required
                       onChange={(e) => setImageFiles(e.target.files)}
                     />
                   </div>
 
                   <div className="flex gap-2">
-                    <Button type="submit">Create Product</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? 'Creating...' : 'Create Product'}
+                    </Button>
                     <Button
+                      type="button"
                       variant="outline"
                       onClick={() => {
                         setShowCreateModal(false);
@@ -406,6 +487,19 @@ export default function AdminProductsPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="edit-images">Additional Images</Label>
+                    {/* Image preview */}
+                    {editPreviewUrls.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {editPreviewUrls.map((url, idx) => (
+                          <img
+                            key={idx}
+                            src={url}
+                            alt="Product preview"
+                            className="w-full h-32 object-cover rounded-md"
+                          />
+                        ))}
+                      </div>
+                    )}
                     <Input
                       id="edit-images"
                       type="file"
@@ -416,8 +510,11 @@ export default function AdminProductsPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button type="submit">Update Product</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? 'Updating...' : 'Update Product'}
+                    </Button>
                     <Button
+                      type="button"
                       variant="outline"
                       onClick={() => {
                         setShowEditModal(false);

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
 import { Product } from '@/lib/types';
+import { getCategoryName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/Card';
 
@@ -126,7 +127,7 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
-              <p className="text-lg text-gray-600">{product.category.name}</p>
+              <p className="text-lg text-gray-600">{getCategoryName(product.category)}</p>
             </div>
 
             <div className="flex items-center gap-2">
