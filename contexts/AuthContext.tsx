@@ -72,16 +72,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (userData: RegisterData) => {
     try {
+      console.log("Sending registration data:", userData);
+      console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+
       const response = await apiClient.post<{ success: boolean; message: string; data: User; token: string }>(
         '/auth/register',
         userData
       );
 
+      console.log("Registration response:", response);
+
       if (response.success) {
         // Backend returns: { success: true, data: user, token: "..." }
         const newUser = response.data;
         const userToken = response.token;
-        
+
         setUser(newUser);
         setToken(userToken);
         localStorage.setItem('token', userToken);
@@ -89,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         apiClient.setToken(userToken);
       }
     } catch (error) {
+      console.error("Registration error:", error);
       throw error;
     }
   };

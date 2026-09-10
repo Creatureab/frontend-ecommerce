@@ -43,6 +43,8 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    console.log(`API Request: ${options.method || 'GET'} ${url}`);
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -51,12 +53,17 @@ class ApiClient {
       },
     });
 
+    console.log(`API Response Status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+      console.error('API Error:', error);
       throw new Error(this.formatErrorMessage(error, 'Request failed'));
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('API Response Data:', data);
+    return data;
   }
 
   async get<T>(endpoint: string): Promise<T> {
