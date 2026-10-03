@@ -70,21 +70,21 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<T> {
+  async post<T>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<T> {
+  async put<T>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async patch<T>(endpoint: string, data?: any): Promise<T> {
+  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -123,7 +123,7 @@ class ApiClient {
       let error;
       try {
         error = JSON.parse(errorText);
-      } catch (e) {
+      } catch {
         error = { message: errorText || 'Upload failed' };
       }
       throw new Error(this.formatErrorMessage(error, 'Upload failed'));
@@ -132,13 +132,19 @@ class ApiClient {
     return response.json();
   }
 
-  private formatErrorMessage(error: any, fallback: string): string {
-    if (error?.message) {
-      return error.message;
+  private formatErrorMessage(error: unknown, fallback: string): string {
+    if (!error || typeof error !== 'object') return fallback;
+
+    const apiError = error as { message?: unknown; errors?: unknown };
+    if (typeof apiError.message === 'string') {
+      return apiError.message;
     }
 
-    if (Array.isArray(error?.errors)) {
-      return error.errors.map((entry: { msg?: string }) => entry.msg).filter(Boolean).join(', ');
+    if (Array.isArray(apiError.errors)) {
+      return apiError.errors
+        .map((entry: { msg?: string }) => entry.msg)
+        .filter((message): message is string => Boolean(message))
+        .join(', ');
     }
 
     return fallback;

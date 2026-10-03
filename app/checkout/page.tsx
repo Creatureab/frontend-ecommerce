@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -10,40 +10,56 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { cart, cartTotal, clearCart } = useCart();
+  const { user, isLoading: isAuthLoading, updateProfile } = useAuth();
+  const { cart, cartTotal, clearCart, isHydrated } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthLoading && !user) router.replace('/login');
+    else if (!isAuthLoading && isHydrated && cart.length === 0) router.replace('/cart');
+  }, [cart.length, isAuthLoading, isHydrated, router, user]);
 
-  if (cart.length === 0) {
-    router.push('/cart');
-    return null;
-  }
+  if (isAuthLoading || !isHydrated || !user || cart.length === 0) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setIsProcessing(true);
 
     try {
+      const formData = new FormData(e.currentTarget);
+      await updateProfile({
+        userName: String(formData.get('userName') ?? ''),
+        email: String(formData.get('email') ?? ''),
+        phoneNumber: String(formData.get('phoneNumber') ?? ''),
+        addressLine1: String(formData.get('addressLine1') ?? ''),
+        addressLine2: String(formData.get('addressLine2') ?? ''),
+        city: String(formData.get('city') ?? ''),
+        postalCode: String(formData.get('postalCode') ?? ''),
+      });
+
       const orderItems = cart.map((item) => ({
         product: item.product.id,
         quantity: item.quantity,
       }));
 
       const response = await api.createOrder(orderItems);
-      
+      const orderId = response?.data?.id;
+
+      if (!orderId) {
+        throw new Error('Order was created but no order ID was returned');
+      }
+
       clearCart();
-      router.push(`/orders/${response.id}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create order');
+      router.push(`/orders/${orderId}`);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create order'));
     } finally {
       setIsProcessing(false);
     }

@@ -3,28 +3,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/lib/types';
 import { apiClient } from '@/lib/api-client';
+import { authApi, type ProfileUpdatePayload, type RegisterPayload } from '@/features/auth/api';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
+  register: (userData: RegisterPayload) => Promise<void>;
+  updateProfile: (payload: ProfileUpdatePayload) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-}
-
-interface RegisterData {
-  email: string;
-  password: string;
-  userName: string;
-  city: string;
-  postalCode: string;
-  addressLine1: string;
-  addressLine2: string;
-  phoneNumber: string;
-  role?: 'admin' | 'user';
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,20 +29,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
     
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      apiClient.setToken(storedToken);
-    }
-    setIsLoading(false);
+    queueMicrotask(() => {
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        apiClient.setToken(storedToken);
+      }
+      setIsLoading(false);
+    });
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await apiClient.post<{ success: boolean; message: string; data: { user: User; token: string } }>(
-        '/auth/login',
-        { email, password }
-      );
+      const response = await authApi.login(email, password);
 
       if (response.success && response.data) {
         // Backend returns: { success: true, data: { user: {...}, token: "..." } }
@@ -70,17 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const register = async (userData: RegisterData) => {
+  const register = async (userData: RegisterPayload) => {
     try {
-      console.log("Sending registration data:", userData);
-      console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
-
-      const response = await apiClient.post<{ success: boolean; message: string; data: User; token: string }>(
-        '/auth/register',
-        userData
-      );
-
-      console.log("Registration response:", response);
+      const response = await authApi.register(userData);
 
       if (response.success) {
         // Backend returns: { success: true, data: user, token: "..." }
@@ -94,8 +75,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         apiClient.setToken(userToken);
       }
     } catch (error) {
-      console.error("Registration error:", error);
       throw error;
+    }
+  };
+
+  const updateProfile = async (payload: ProfileUpdatePayload) => {
+    const response = await authApi.updateProfile(payload);
+    if (response.data) {
+      setUser(response.data);
+      localStorage.setItem('user', JSON.stringify(response.data));
     }
   };
 
@@ -112,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     token,
     login,
     register,
+    updateProfile,
     logout,
     isLoading,
     isAuthenticated: !!user,

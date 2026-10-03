@@ -74,9 +74,14 @@ export interface LoginResponse {
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
+  success?: boolean;
   message: string;
   data: T;
+}
+
+export interface OrderCreationResponse {
+  message: string;
+  data: Order;
 }
 
 export interface PaginatedResponse<T> {

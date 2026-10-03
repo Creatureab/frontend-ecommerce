@@ -1,20 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { AuthGate } from '@/features/auth/components/AuthGate';
 
 export default function CartPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount } = useCart();
-
-  if (!isAuthenticated) {
-    router.push('/login');
-    return null;
-  }
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -37,6 +31,7 @@ export default function CartPage() {
   };
 
   return (
+    <AuthGate fallback={<div className="min-h-screen" />}>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
@@ -169,5 +164,6 @@ export default function CartPage() {
         )}
       </main>
     </div>
+    </AuthGate>
   );
 }

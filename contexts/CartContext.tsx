@@ -5,6 +5,7 @@ import { CartItem, Product } from '@/lib/types';
 
 interface CartContextType {
   cart: CartItem[];
+  isHydrated: boolean;
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -17,19 +18,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     // Load cart from localStorage on mount
     const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      setCart(JSON.parse(storedCart));
-    }
+    queueMicrotask(() => {
+      if (storedCart) {
+        try {
+          setCart(JSON.parse(storedCart));
+        } catch {
+          localStorage.removeItem('cart');
+        }
+      }
+      setIsHydrated(true);
+    });
   }, []);
 
   useEffect(() => {
     // Save cart to localStorage whenever it changes
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    if (isHydrated) localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart, isHydrated]);
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setCart((prevCart) => {
@@ -73,6 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const value: CartContextType = {
     cart,
+    isHydrated,
     addToCart,
     removeFromCart,
     updateQuantity,
