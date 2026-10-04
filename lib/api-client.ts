@@ -103,29 +103,57 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: HeadersInit = {};
+    const hasToken = Boolean(this.token);
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    console.log(`Uploading to ${url} with method ${method}`);
-    const response = await fetch(url, {
+    console.info('[api upload] starting request', {
       method,
-      headers,
-      body: formData,
+      url,
+      authorizationAttached: hasToken,
+      fileCount: Array.from(formData.values()).filter((value) => typeof value !== 'string').length,
     });
 
-    console.log('Upload response status:', response.status);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        body: formData,
+      });
+    } catch (error) {
+      console.error('[api upload] network request failed', {
+        method,
+        url,
+        authorizationAttached: hasToken,
+        message: error instanceof Error ? error.message : 'Unknown network error',
+      });
+      throw error;
+    }
+
+    console.info('[api upload] response received', {
+      method,
+      url,
+      status: response.status,
+      ok: response.ok,
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Upload failed, response text:', errorText);
       let error;
       try {
         error = JSON.parse(errorText);
       } catch (e) {
         error = { message: errorText || 'Upload failed' };
       }
+      console.error('[api upload] request rejected', {
+        method,
+        url,
+        status: response.status,
+        message: this.formatErrorMessage(error, 'Upload failed'),
+      });
       throw new Error(this.formatErrorMessage(error, 'Upload failed'));
     }
 

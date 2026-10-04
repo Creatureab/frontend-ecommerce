@@ -101,7 +101,10 @@ export default function AdminProductsPage() {
         }
       }
 
-      console.log('Sending FormData:', Object.fromEntries(formDataObj.entries()));
+      console.info('[product create] form data prepared', {
+        fields: Array.from(formDataObj.keys()),
+        imageCount: imageFiles.length,
+      });
       const response = await api.createProduct(formDataObj);
       console.log('Product created successfully:', response);
       setMessage('Product created successfully');
