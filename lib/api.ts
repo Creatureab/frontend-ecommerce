@@ -1,6 +1,15 @@
 import { apiClient } from './api-client';
 import { Product, Category, Order, User, PaginatedResponse } from './types';
 
+type ProductWriteData = {
+  title: string;
+  category: string;
+  price: number;
+  description: string;
+  countInStock: number;
+  images: string[];
+};
+
 export const api = {
   // Auth
   login: (email: string, password: string) =>
@@ -24,11 +33,11 @@ export const api = {
   getProduct: (id: string) =>
     apiClient.get<Product>(`/products/${id}`),
   
-  createProduct: (formData: FormData) =>
-    apiClient.upload<Product>('/products', formData),
+  createProduct: (productData: ProductWriteData) =>
+    apiClient.post<{ success: boolean; message: string; data: Product }>('/products', productData),
   
-  updateProduct: (id: string, formData: FormData) =>
-    apiClient.upload<Product>(`/products/${id}`, formData, 'PUT'),
+  updateProduct: (id: string, productData: ProductWriteData) =>
+    apiClient.put<{ success: boolean; message: string; data: Product }>(`/products/${id}`, productData),
   
   deleteProduct: (id: string) =>
     apiClient.delete(`/products/${id}`),

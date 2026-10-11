@@ -26,12 +26,23 @@ export default function AdminProductsPage() {
     price: '',
     description: '',
     countInStock: '',
+    imageUrls: '',
   });
-  const [imageFiles, setImageFiles] = useState<FileList | null>(null);
-  const [createPreviewUrls, setCreatePreviewUrls] = useState<string[]>([]);
-  const [editPreviewUrls, setEditPreviewUrls] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getImageUrls = () =>
+    formData.imageUrls.split(/\r?\n/).map((url) => url.trim()).filter(Boolean);
+
+  const areValidImageUrls = (urls: string[]) =>
+    urls.every((url) => {
+      try {
+        const parsedUrl = new URL(url);
+        return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    });
 
   useEffect(() => {
     if (authLoading) return;
@@ -71,8 +82,14 @@ export default function AdminProductsPage() {
     setIsSubmitting(true);
     setMessage('');
 
-    if (!imageFiles || imageFiles.length === 0) {
-      setMessage('Please upload at least one product image');
+    const imageUrls = getImageUrls();
+    if (imageUrls.length === 0) {
+      setMessage('Please provide at least one product image URL');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!areValidImageUrls(imageUrls)) {
+      setMessage('Each image must be a valid HTTP or HTTPS URL');
       setIsSubmitting(false);
       return;
     }
@@ -83,41 +100,23 @@ export default function AdminProductsPage() {
       return;
     }
 
-    // Create preview URLs for selected images
-    const previewUrls = Array.from(imageFiles).map(file => URL.createObjectURL(file));
-    setCreatePreviewUrls(previewUrls);
-
     try {
-      const formDataObj = new FormData();
-      formDataObj.append('title', formData.title);
-      formDataObj.append('category', formData.category);
-      formDataObj.append('price', formData.price);
-      formDataObj.append('description', formData.description);
-      formDataObj.append('countInStock', formData.countInStock);
-      
-      if (imageFiles) {
-        for (let i = 0; i < imageFiles.length; i++) {
-          formDataObj.append('images', imageFiles[i]);
-        }
-      }
-
-      console.info('[product create] form data prepared', {
-        fields: Array.from(formDataObj.keys()),
-        imageCount: imageFiles.length,
+      const response = await api.createProduct({
+        title: formData.title,
+        category: formData.category,
+        price: Number(formData.price),
+        description: formData.description,
+        countInStock: Number(formData.countInStock),
+        images: imageUrls,
       });
-      const response = await api.createProduct(formDataObj);
       console.log('Product created successfully:', response);
       setMessage('Product created successfully');
       setShowCreateModal(false);
       resetForm();
       fetchProducts();
-      // Clean up preview URLs
-      previewUrls.forEach(url => URL.revokeObjectURL(url));
     } catch (error: any) {
       console.error('Failed to create product:', error);
       setMessage(error.message || 'Failed to create product');
-      // Clean up preview URLs on error
-      previewUrls.forEach(url => URL.revokeObjectURL(url));
     } finally {
       setIsSubmitting(false);
     }
@@ -129,37 +128,27 @@ export default function AdminProductsPage() {
     setIsSubmitting(true);
 
     try {
-      // Create preview URLs for new images if selected
-      let previewUrls: string[] = [];
-      if (imageFiles) {
-        previewUrls = Array.from(imageFiles).map(file => URL.createObjectURL(file));
-        setEditPreviewUrls(previewUrls);
+      const imageUrls = getImageUrls();
+      if (imageUrls.length === 0 || !areValidImageUrls(imageUrls)) {
+        setMessage('Provide at least one valid HTTP or HTTPS image URL');
+        setIsSubmitting(false);
+        return;
       }
 
-      const formDataObj = new FormData();
-      if (formData.title) formDataObj.append('title', formData.title);
-      if (formData.category) formDataObj.append('category', formData.category);
-      if (formData.price) formDataObj.append('price', formData.price);
-      if (formData.description) formDataObj.append('description', formData.description);
-      if (formData.countInStock) formDataObj.append('countInStock', formData.countInStock);
-      
-      if (imageFiles) {
-        for (let i = 0; i < imageFiles.length; i++) {
-          formDataObj.append('images', imageFiles[i]);
-        }
-      }
-
-      await api.updateProduct(selectedProduct.id, formDataObj);
+      await api.updateProduct(selectedProduct.id, {
+        title: formData.title,
+        category: formData.category,
+        price: Number(formData.price),
+        description: formData.description,
+        countInStock: Number(formData.countInStock),
+        images: imageUrls,
+      });
       setMessage('Product updated successfully');
       setShowEditModal(false);
       resetForm();
       fetchProducts();
-      // Clean up preview URLs
-      previewUrls.forEach(url => URL.revokeObjectURL(url));
     } catch (error: any) {
       setMessage(error.message || 'Failed to update product');
-      // @ts-ignore - previewUrls might be undefined here if imageFiles was null, fix logic
-      if (typeof previewUrls !== 'undefined') previewUrls.forEach(url => URL.revokeObjectURL(url));
     } finally {
       setIsSubmitting(false);
     }
@@ -185,6 +174,7 @@ export default function AdminProductsPage() {
       price: product.price.toString(),
       description: product.description,
       countInStock: product.countInStock.toString(),
+      imageUrls: product.images.join('\n'),
     });
     setShowEditModal(true);
   };
@@ -196,10 +186,8 @@ export default function AdminProductsPage() {
       price: '',
       description: '',
       countInStock: '',
+      imageUrls: '',
     });
-    setImageFiles(null);
-    setCreatePreviewUrls([]);
-    setEditPreviewUrls([]);
     setSelectedProduct(null);
   };
 
@@ -378,13 +366,21 @@ export default function AdminProductsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="images">Product Images</Label>
-                    {/* Image preview */}
-                    {createPreviewUrls.length > 0 && (
+                    <Label htmlFor="images">Product Image URLs</Label>
+                    <textarea
+                      id="images"
+                      value={formData.imageUrls}
+                      onChange={(e) => setFormData({ ...formData, imageUrls: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md min-h-[100px]"
+                      placeholder="https://example.com/product-image.jpg"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">Enter one HTTP or HTTPS image URL per line.</p>
+                    {getImageUrls().length > 0 && (
                       <div className="grid grid-cols-2 gap-2">
-                        {createPreviewUrls.map((url, idx) => (
+                        {getImageUrls().map((url, idx) => (
                           <img
-                            key={idx}
+                            key={`${url}-${idx}`}
                             src={url}
                             alt="Product preview"
                             className="w-full h-32 object-cover rounded-md"
@@ -392,14 +388,6 @@ export default function AdminProductsPage() {
                         ))}
                       </div>
                     )}
-                    <Input
-                      id="images"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      required
-                      onChange={(e) => setImageFiles(e.target.files)}
-                    />
                   </div>
 
                   <div className="flex gap-2">
@@ -489,13 +477,20 @@ export default function AdminProductsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="edit-images">Additional Images</Label>
-                    {/* Image preview */}
-                    {editPreviewUrls.length > 0 && (
+                    <Label htmlFor="edit-images">Product Image URLs</Label>
+                    <textarea
+                      id="edit-images"
+                      value={formData.imageUrls}
+                      onChange={(e) => setFormData({ ...formData, imageUrls: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-md min-h-[100px]"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">Enter one HTTP or HTTPS image URL per line. Remove a line to remove that image.</p>
+                    {getImageUrls().length > 0 && (
                       <div className="grid grid-cols-2 gap-2">
-                        {editPreviewUrls.map((url, idx) => (
+                        {getImageUrls().map((url, idx) => (
                           <img
-                            key={idx}
+                            key={`${url}-${idx}`}
                             src={url}
                             alt="Product preview"
                             className="w-full h-32 object-cover rounded-md"
@@ -503,13 +498,6 @@ export default function AdminProductsPage() {
                         ))}
                       </div>
                     )}
-                    <Input
-                      id="edit-images"
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => setImageFiles(e.target.files)}
-                    />
                   </div>
 
                   <div className="flex gap-2">
