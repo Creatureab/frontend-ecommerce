@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import { Product, Category } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
@@ -66,8 +68,14 @@ export default function HomePage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">E-Commerce Store</h1>
+            <h1 className="text-2xl font-bold text-gray-900">CakePoint</h1>
             <div className="flex gap-4 items-center">
+              <Link
+                href="/about"
+                className="inline-flex min-h-11 items-center text-sm font-medium text-gray-700 transition-colors hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
+              >
+                About Us
+              </Link>
               <Button
                 variant="outline"
                 onClick={() => router.push('/cart')}
@@ -183,7 +191,7 @@ export default function HomePage() {
                     </p>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xl font-bold text-gray-900">
-                        ${product.price.toFixed(2)}
+                        {formatCurrency(product.price)}
                       </span>
                       <span className="text-sm text-gray-500">
                         Stock: {product.countInStock}

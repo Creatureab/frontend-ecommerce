@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -175,8 +176,8 @@ export default function OrderDetailPage() {
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">${item.price.toFixed(2)}</p>
-                        <p className="text-sm text-gray-600">Total: ${(item.price * item.quantity).toFixed(2)}</p>
+                        <p className="font-semibold">{formatCurrency(item.price)}</p>
+                        <p className="text-sm text-gray-600">Total: {formatCurrency(item.price * item.quantity)}</p>
                       </div>
                     </div>
                   ))}
@@ -185,7 +186,7 @@ export default function OrderDetailPage() {
                 <div className="mt-6 pt-4 border-t">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Order Total</span>
-                    <span>${order.totalPrice.toFixed(2)}</span>
+                    <span>{formatCurrency(order.totalPrice)}</span>
                   </div>
                 </div>
               </CardContent>

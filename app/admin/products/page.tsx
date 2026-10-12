@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { Product, Category } from '@/lib/types';
-import { getCategoryName } from '@/lib/utils';
+import { formatCurrency, getCategoryName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -264,7 +264,7 @@ export default function AdminProductsPage() {
                     <h3 className="font-semibold mb-2 line-clamp-1">{product.title}</h3>
                     <p className="text-sm text-gray-600 mb-2">{getCategoryName(product.category)}</p>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold">${product.price.toFixed(2)}</span>
+                      <span className="font-bold">{formatCurrency(product.price)}</span>
                       <span className="text-sm text-gray-500">Stock: {product.countInStock}</span>
                     </div>
                     <div className="flex gap-2">

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
@@ -188,7 +189,7 @@ export default function AdminOrdersPage() {
                           </div>
                         </div>
                         <span className="font-semibold">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {formatCurrency(item.price * item.quantity)}
                         </span>
                       </div>
                     ))}
@@ -197,7 +198,7 @@ export default function AdminOrdersPage() {
                   <div className="flex justify-between items-center border-t pt-4">
                     <div>
                       <span className="font-semibold text-lg">
-                        Total: ${order.totalPrice.toFixed(2)}
+                        Total: {formatCurrency(order.totalPrice)}
                       </span>
                     </div>
                     <div className="flex gap-2">

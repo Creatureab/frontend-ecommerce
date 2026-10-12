@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
@@ -81,7 +82,7 @@ export default function CartPage() {
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1">{item.product.title}</h3>
                         <p className="text-sm text-gray-600 mb-2">{item.product.category?.name ?? "Uncategorized"}</p>
-                        <p className="text-lg font-bold">${item.product.price.toFixed(2)}</p>
+                        <p className="text-lg font-bold">{formatCurrency(item.product.price)}</p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center border rounded">
@@ -133,7 +134,7 @@ export default function CartPage() {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span>Subtotal ({cartCount} items)</span>
-                    <span className="font-semibold">${cartTotal.toFixed(2)}</span>
+                    <span className="font-semibold">{formatCurrency(cartTotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
@@ -141,12 +142,12 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Tax</span>
-                    <span className="font-semibold">${(cartTotal * 0.1).toFixed(2)}</span>
+                    <span className="font-semibold">{formatCurrency(cartTotal * 0.1)}</span>
                   </div>
                   <hr />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>${(cartTotal * 1.1).toFixed(2)}</span>
+                    <span>{formatCurrency(cartTotal * 1.1)}</span>
                   </div>
                   <Button
                     className="w-full"

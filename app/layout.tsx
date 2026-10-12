@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "E-Commerce Store",
+  title: "CakePoint",
   description: "Modern e-commerce platform",
 };
 

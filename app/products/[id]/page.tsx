@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
 import { Product } from '@/lib/types';
-import { getCategoryName } from '@/lib/utils';
+import { formatCurrency, getCategoryName } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/Card';
 
@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
 
             <div className="flex items-center gap-2">
               <span className="text-3xl font-bold text-gray-900">
-                ${product.price.toFixed(2)}
+                {formatCurrency(product.price)}
               </span>
               <span className="text-sm text-gray-500">
                 ({product.countInStock} in stock)

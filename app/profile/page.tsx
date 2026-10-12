@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import { User, Order } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
@@ -295,12 +296,12 @@ export default function ProfilePage() {
                           {order.orderItems.map((item) => (
                             <div key={item.product.id} className="flex justify-between text-sm">
                               <span>{item.product.title} x{item.quantity}</span>
-                              <span>${(item.price * item.quantity).toFixed(2)}</span>
+                              <span>{formatCurrency(item.price * item.quantity)}</span>
                             </div>
                           ))}
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold">Total: ${order.totalPrice.toFixed(2)}</span>
+                          <span className="font-semibold">Total: {formatCurrency(order.totalPrice)}</span>
                           {order.status === 'pending' || order.status === 'processing' ? (
                             <Button
                               variant="destructive"

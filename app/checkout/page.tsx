@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
@@ -192,7 +193,7 @@ export default function CheckoutPage() {
                       <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                     </div>
                     <div className="font-semibold">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      {formatCurrency(item.product.price * item.quantity)}
                     </div>
                   </div>
                 ))}
@@ -202,7 +203,7 @@ export default function CheckoutPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${cartTotal.toFixed(2)}</span>
+                    <span>{formatCurrency(cartTotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping</span>
@@ -210,12 +211,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Tax (10%)</span>
-                    <span>${(cartTotal * 0.1).toFixed(2)}</span>
+                    <span>{formatCurrency(cartTotal * 0.1)}</span>
                   </div>
                   <hr />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span>${totalWithTax.toFixed(2)}</span>
+                    <span>{formatCurrency(totalWithTax)}</span>
                   </div>
                 </div>
               </CardContent>
