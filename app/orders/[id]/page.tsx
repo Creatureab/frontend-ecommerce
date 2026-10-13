@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function OrderDetailPage() {
   const router = useRouter();

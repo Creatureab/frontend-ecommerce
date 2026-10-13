@@ -1,31 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { cart, cartTotal, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  if (!user) {
-    router.push('/login');
-    return null;
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace('/login');
+    }
+  }, [authLoading, router, user]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center" role="status">
+        <p className="text-gray-500">Preparing checkout...</p>
+      </div>
+    );
   }
 
   if (cart.length === 0) {
-    router.push('/cart');
-    return null;
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-gray-600">Your cart is empty.</p>
+        <Button asChild>
+          <Link href="/cart">Return to cart</Link>
+        </Button>
+      </div>
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,8 +63,8 @@ export default function CheckoutPage() {
       
       clearCart();
       router.push(`/orders/${response.id}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create order');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create order');
     } finally {
       setIsProcessing(false);
     }

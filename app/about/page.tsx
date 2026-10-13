@@ -47,25 +47,6 @@ const reasons = [
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#fffaf5] text-stone-900">
-      <header className="border-b border-rose-100 bg-white/90">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight text-rose-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
-          >
-            Cake Point
-          </Link>
-          <nav aria-label="Main navigation" className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-stone-700 transition-colors hover:bg-rose-50 hover:text-rose-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
-            >
-              Shop cakes
-            </Link>
-          </nav>
-        </div>
-      </header>
-
       <section className="relative overflow-hidden border-b border-rose-100 bg-gradient-to-br from-rose-50 via-[#fffaf5] to-orange-50">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.2fr_0.8fr] lg:items-center lg:px-8 lg:py-24">
           <div>

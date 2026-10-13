@@ -1,21 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
-import { Product, Category } from '@/lib/types';
+import type { Product, Category } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardFooter } from '@/components/ui/Card';
+import { Input } from '@/components/ui/input';
+import { Carousel } from '@/components/carousel';
+import { ProductList } from '@/components/product-list';
 
 export default function HomePage() {
-  const router = useRouter();
-  const { isAuthenticated, isAdmin, logout } = useAuth();
-  const { addToCart } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,128 +17,100 @@ export default function HomePage() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, [search, selectedCategory, page]);
+    let active = true;
+    const params: { page: number; limit: number; search?: string; categoryID?: string } = {
+      page,
+      limit: 12,
+    };
+    if (search) params.search = search;
+    if (selectedCategory) params.categoryID = selectedCategory;
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const params: any = { page, limit: 12 };
-      if (search) params.search = search;
-      if (selectedCategory) params.categoryID = selectedCategory;
-      
-      const response = await api.getProducts(params);
-      setProducts(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    api.getProducts(params)
+      .then((response) => {
+        if (active) {
+          setProducts(response.data || []);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          console.error('Failed to fetch products:', error);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
 
-  const fetchCategories = async () => {
-    try {
-      const response = await api.getCategories();
-      setCategories(response);
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  };
+    return () => {
+      active = false;
+    };
+  }, [page, search, selectedCategory]);
 
-  const handleAddToCart = (product: Product) => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    addToCart(product, 1);
-    alert('Product added to cart!');
-  };
+  useEffect(() => {
+    let active = true;
+    api.getCategories()
+      .then((response) => {
+        if (active) {
+          setCategories(response);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          console.error('Failed to fetch categories:', error);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">CakePoint</h1>
-            <div className="flex gap-4 items-center">
-              <Link
-                href="/about"
-                className="inline-flex min-h-11 items-center text-sm font-medium text-gray-700 transition-colors hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2"
-              >
-                About Us
-              </Link>
-              <Button
-                variant="outline"
-                onClick={() => router.push('/cart')}
-              >
-                Cart
-              </Button>
-              {isAuthenticated ? (
-                <>
-                  {isAdmin && (
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push('/admin')}
-                    >
-                      Admin Dashboard
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push('/profile')}
-                  >
-                    Profile
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => logout()}
-                  >
-                    Logout
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push('/login')}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    onClick={() => router.push('/register')}
-                  >
-                    Register
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
+    <div className="min-h-screen bg-rose-50/30">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-7">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-rose-800">
+            Cake Point · Kolhapur
+          </p>
+          <h1 className="mt-2 font-[var(--font-heading)] text-3xl font-semibold text-rose-950 sm:text-4xl">
+            Cakes for every celebration
+          </h1>
+          <p className="mt-2 max-w-2xl leading-6 text-stone-600">
+            Freshly baked favourites and custom creations, made for sharing.
+          </p>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!loading && !search && !selectedCategory && products.length > 0 && (
+          <div className="mb-8">
+            <Carousel products={products.slice(0, 3)} />
+          </div>
+        )}
+
         {/* Search and Filter */}
         <div className="mb-8 space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Input
+              type="search"
+              aria-label="Search cakes"
               placeholder="Search products..."
               value={search}
               onChange={(e) => {
+                setLoading(true);
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="max-w-md"
+              className="max-w-md bg-white"
             />
             <select
+              aria-label="Filter by category"
               value={selectedCategory}
               onChange={(e) => {
+                setLoading(true);
                 setSelectedCategory(e.target.value);
                 setPage(1);
               }}
-              className="px-4 py-2 border rounded-md"
+              className="min-h-11 rounded-md border border-input bg-white px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
@@ -157,82 +122,16 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Products Grid */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500">Loading products...</div>
-          </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500">No products found</div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden">
-                <CardContent className="p-0">
-                  {product.images && product.images.length > 0 ? (
-                    <img
-                      src={product.images[0]}
-                      alt={product.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-400">No image</span>
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                      {product.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                      {product.description}
-                    </p>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xl font-bold text-gray-900">
-                        {formatCurrency(product.price)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        Stock: {product.countInStock}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
-                      <span className="text-yellow-500">★</span>
-                      <span className="text-sm text-gray-600">
-                        {product.rating.average.toFixed(1)} ({product.rating.count})
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                  <div className="flex gap-2 w-full">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => router.push(`/products/${product.id}`)}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={product.countInStock === 0}
-                    >
-                      {product.countInStock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
+        <ProductList products={products} loading={loading} />
 
         {/* Pagination */}
         <div className="flex justify-center gap-2 mt-8">
           <Button
             variant="outline"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => {
+              setLoading(true);
+              setPage((p) => Math.max(1, p - 1));
+            }}
             disabled={page === 1}
           >
             Previous
@@ -240,7 +139,10 @@ export default function HomePage() {
           <span className="px-4 py-2">Page {page}</span>
           <Button
             variant="outline"
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => {
+              setLoading(true);
+              setPage((p) => p + 1);
+            }}
             disabled={products.length < 12}
           >
             Next

@@ -7,8 +7,8 @@ import { api } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { Order } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/Input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminOrdersPage() {
   const router = useRouter();

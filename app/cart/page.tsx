@@ -1,20 +1,30 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CartPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { cart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount } = useCart();
 
-  if (!isAuthenticated) {
-    router.push('/login');
-    return null;
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center" role="status">
+        <p className="text-gray-500">Loading your cart...</p>
+      </div>
+    );
   }
 
   const handleCheckout = () => {
